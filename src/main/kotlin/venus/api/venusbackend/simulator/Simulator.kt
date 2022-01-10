@@ -28,6 +28,10 @@ import venusbackend.simulator.Simulator
         return sim.getFReg(id)
     }
 
+    @JsName("getCsrReg") fun getCsrReg(sim: Simulator, id: Int): Number {
+        return sim.getCsrReg(id)
+    }
+
     @JsName("loadByte") fun loadByte(sim: Simulator, addr: Number): Int {
         return sim.loadByte(addr)
     }

@@ -23,6 +23,8 @@ import venusbackend.simulator.cache.CacheError
 import venusbackend.simulator.cache.CacheHandler
 import venusbackend.simulator.cache.PlacementPolicy
 
+import venusbackend.riscv.insts.dsl.parsers.checkCSR
+
 // using these imports only for type checks and fake DOM
 import kotlin.dom.addClass
 import kotlin.dom.removeClass
@@ -230,6 +232,60 @@ external val document: Document
     @JsName("getFRegister") fun getFRegister(id: Int): Decimal {
         return sim.getFReg(id)
     }
+
+    // @JsName("getCsrRegister") fun getCsrRegister(id: Int): Number {
+    //     return sim.getCsrReg(id)
+    // }
+
+    @JsName("getCsrRegisterByName") fun getCsrRegisterByName(name: String): Number {
+        val CSR = checkCSR(name)        
+        if (CSR != null) {
+            return sim.getCsrReg(CSR)
+        }
+        return 0 // error!
+    }
+
+    @JsName("getCsrRegisterNames") fun getCsrRegisterNames(): Array<String> {
+        val csrRegList: MutableList<String> = mutableListOf()
+        SpecialRegisters.values().forEach { csrRegList.add(it.regName) }
+        return csrRegList.toTypedArray()
+    }    
+
+    // @JsName("setCsrRegister") fun setCsrRegister(id: Int, value: Number) {
+    //     if (!currentlyRunning()) {
+    //         try {
+    //             sim.setCsrRegNoUndo(id, value)
+    //         } catch (e: NumberFormatException) {
+    //             /* do nothing */
+    //         }
+    //     }
+    // }
+
+    @JsName("setCsrRegisterByName") fun setCsrRegisterByName(name: String, value: Number) {
+        if (!currentlyRunning()) {
+            try {
+                val CSR = checkCSR(name)        
+                if (CSR != null) {
+                    sim.setCsrRegNoUndo(CSR, value)
+                }                                
+            } catch (e: NumberFormatException) {
+                /* do nothing */
+            }
+        }
+    }
+
+    @JsName("getCsrRegisterIdByName") fun getCsrRegisterIdByName(name: String): Number {
+        val CSR = checkCSR(name)        
+        if (CSR != null) {
+            return CSR
+        }
+        else {
+            return -1 // error!
+        }        
+    } 
+    // @JsName("getCsrRegisterNameById") fun getCsrRegisterIdByName(id: Number): String {
+    //     TODO
+    // }            
 
     @JsName("setRegister") fun setRegister(id: Int, value: Number) {
         if (!currentlyRunning()) {
