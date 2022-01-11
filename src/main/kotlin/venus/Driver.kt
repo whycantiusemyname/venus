@@ -172,28 +172,32 @@ external val document: Document
 
     @JsName("getInstructions") fun getIntructions(): Array<InstructionInfo> {
         val instructions: MutableList<InstructionInfo> = mutableListOf()
-        for (i in 0 until sim.linkedProgram.prog.insts.size) {
-            val programDebug = sim.linkedProgram.dbg[i]
+
+        var i = 0
+        if (sim.bios != null) {  
+            for (k in 0 until sim.bios!!.insts.size) {
+                val dbg = sim.bios!!.debugInfo[k]
+                val lineNo = dbg.lineNo
+                val mc = sim.bios!!.insts[k]
+                //TODO add Instruction Order Mapping
+                val pc = sim.instOrderMapping[i]!!
+                val basicCode = Instruction[mc].disasm(mc)
+                val mcode = mc[InstructionField.ENTIRE].toInt()
+                instructions.add(InstructionInfo(pc, mcode, basicCode, lineNo, dbg.prog.absPath))
+                i++
+            }
+        }
+
+        for (k in 0 until sim.linkedProgram.prog.insts.size) {
+            val programDebug = sim.linkedProgram.dbg[k]
             val (_, dbg) = programDebug
             val lineNo = dbg.lineNo
-            val mc = sim.linkedProgram.prog.insts[i]
+            val mc = sim.linkedProgram.prog.insts[k]
             val pc = sim.instOrderMapping[i]!!
             val basicCode = Instruction[mc].disasm(mc)
             val mcode = mc[InstructionField.ENTIRE].toInt()
             instructions.add(InstructionInfo(pc, mcode, basicCode, lineNo, dbg.prog.absPath))
-        }
-
-        if (sim.bios != null) {
-            for (i in 0 until sim.bios!!.insts.size) {
-                val dbg = sim.bios!!.debugInfo[i]
-                val lineNo = dbg.lineNo
-                val mc = sim.bios!!.insts[i]
-                //TODO add Instruction Order Mapping
-                val pc = sim.biosInstOrderMapping[i]!!
-                val basicCode = Instruction[mc].disasm(mc)
-                val mcode = mc[InstructionField.ENTIRE].toInt()
-                instructions.add(InstructionInfo(pc, mcode, basicCode, lineNo, dbg.prog.absPath))
-            }
+            i++
         }
 
         return instructions.toTypedArray()
