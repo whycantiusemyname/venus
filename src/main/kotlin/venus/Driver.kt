@@ -8,6 +8,7 @@ import venus.terminal.cmds.vdb
 import venus.vfs.*
 import venusbackend.assembler.*
 import venusbackend.linker.LinkedProgram
+import venusbackend.linker.ProgramDebugInfo
 import venusbackend.linker.Linker
 import venusbackend.linker.ProgramAndLibraries
 import venusbackend.numbers.QuadWord
@@ -162,6 +163,8 @@ external val document: Document
         }
     }
 
+    
+
     @JsName("registerECallReceiver")
     fun registerECallReceiver(receiverFunction: (String) -> String) {
         sim.registerECallReceiver(receiverFunction)
@@ -172,13 +175,25 @@ external val document: Document
         for (i in 0 until sim.linkedProgram.prog.insts.size) {
             val programDebug = sim.linkedProgram.dbg[i]
             val (_, dbg) = programDebug
-            val (_, line) = dbg
             val lineNo = dbg.lineNo
             val mc = sim.linkedProgram.prog.insts[i]
             val pc = sim.instOrderMapping[i]!!
             val basicCode = Instruction[mc].disasm(mc)
             val mcode = mc[InstructionField.ENTIRE].toInt()
             instructions.add(InstructionInfo(pc, mcode, basicCode, lineNo, dbg.prog.absPath))
+        }
+
+        if (sim.bios != null) {
+            for (i in 0 until sim.bios!!.insts.size) {
+                val dbg = sim.bios!!.debugInfo[i]
+                val lineNo = dbg.lineNo
+                val mc = sim.bios!!.insts[i]
+                //TODO add Instruction Order Mapping
+                val pc = sim.biosInstOrderMapping[i]!!
+                val basicCode = Instruction[mc].disasm(mc)
+                val mcode = mc[InstructionField.ENTIRE].toInt()
+                instructions.add(InstructionInfo(pc, mcode, basicCode, lineNo, dbg.prog.absPath))
+            }
         }
 
         return instructions.toTypedArray()
@@ -450,18 +465,40 @@ external val document: Document
         }
     }
 
-    @JsName("externalAssemble") fun externalAssemble(text: String, absPath: String = "", fileName: String = "main.s"): Any {
+
+    @JsName("externalAssemble") fun externalAssemble(text: String, absPath: String = "", fileName: String = "main.s", biosText: String?, biosPath: String?): Any {
         var success = true
         var errs = ""
-        val (prog, errors, warnings) = Assembler.assemble(text, abspath = absPath, name = fileName)
-        if (errors.isNotEmpty()) {
-            errs = errors.first().toString()
+        var bios: Program? = null
+        // Assemble bios
+        if (biosText != null) {
+            var biosAssemblerOutput: AssemblerOutput;
+            if (biosPath != null) 
+                biosAssemblerOutput = Assembler.assemble(biosText, abspath = biosPath, name = "BIOS")
+            else
+                biosAssemblerOutput = Assembler.assemble(biosText, name = "BIOS")
+
+            if (biosAssemblerOutput.errors.isNotEmpty()) {
+                val (biosProg, errors, warnings) = biosAssemblerOutput
+                errs = biosAssemblerOutput.errors.first().toString()
+                success = false
+                return js("[success, errs, warnings]")
+            } else {
+                bios = biosAssemblerOutput.prog
+            }
+        }
+        
+        val progAssemblerOutput = Assembler.assemble(text, abspath = absPath, name = fileName)
+        val warnings = progAssemblerOutput.warnings
+        if (progAssemblerOutput.errors.isNotEmpty()) {
+            errs = progAssemblerOutput.errors.first().toString()
             success = false
         } else {
             try {
-                val PandL = ProgramAndLibraries(listOf(prog), VFS)
+                
+                val PandL = ProgramAndLibraries(listOf(progAssemblerOutput.prog), VFS)
                 val linked = Linker.link(PandL)
-                sim = Simulator(linked, VFS, simSettings)
+                sim = Simulator(linked, VFS, simSettings, bios = bios)
                 val args = Lexer.lex(getDefaultArgs())
                 for (arg in args) {
                     sim.addArg(arg)
@@ -774,6 +811,7 @@ external val document: Document
             sb.append(hexRepresentation/*.removePrefix("0x")*/)
             sb.append("\n")
         }
+
         return sb.toString()
     }
 
