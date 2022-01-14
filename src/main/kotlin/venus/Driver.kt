@@ -307,6 +307,32 @@ external val document: Document
         }
     }
 
+    @JsName("loadByte") fun loadByte(addr: Number): Int {
+        return sim.loadByte(addr)
+    }
+    @JsName("loadHalfWord") fun loadHalfWord(addr: Number): Int {
+        return sim.loadHalfWord(addr)
+    }
+    @JsName("loadWord") fun loadWord(addr: Number): Int {
+        return sim.loadWord(addr)
+    }
+    @JsName("loadLong") fun loadLong(addr: Number): Long {
+        return sim.loadLong(addr)
+    }
+
+    @JsName("storeByte") fun storeByte(addr: Number, value: Number) {
+        sim.storeByte(addr, value)
+    }
+    @JsName("storeHalfWord") fun storeHalfWord(addr: Number, value: Number) {
+        sim.storeHalfWord(addr, value)
+    }
+    @JsName("storeWord") fun storeWord(addr: Number, value: Number) {
+        sim.storeWord(addr, value)
+    }
+    @JsName("storeLong") fun storeLong(addr: Number, value: Number) {
+        sim.storeLong(addr, value)
+    }            
+
     /**
      * DEPRECATED
      * no operation
@@ -822,7 +848,7 @@ external val document: Document
         }
     }
 
-    fun getInstructionDump(): String {
+    @JsName("getInstructionDump") fun getInstructionDump(): String {
         val sb = StringBuilder()
         for (i in 0 until sim.linkedProgram.prog.insts.size) {
             val mcode = sim.linkedProgram.prog.insts[i]
