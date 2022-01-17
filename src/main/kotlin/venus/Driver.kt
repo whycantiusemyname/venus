@@ -175,10 +175,11 @@ external val document: Document
 
         var i = 0
         if (sim.bios != null) {  
-            for (k in 0 until sim.bios!!.insts.size) {
-                val dbg = sim.bios!!.debugInfo[k]
+            for (k in 0 until sim.bios!!.prog.insts.size) {
+                val biosDebug = sim.bios!!.dbg[k]
+                val (_, dbg) = biosDebug
                 val lineNo = dbg.lineNo
-                val mc = sim.bios!!.insts[k]
+                val mc = sim.bios!!.prog.insts[k]
                 //TODO add Instruction Order Mapping
                 val pc = sim.instOrderMapping[i]!!
                 val basicCode = Instruction[mc].disasm(mc)
@@ -473,7 +474,7 @@ external val document: Document
     @JsName("externalAssemble") fun externalAssemble(text: String, absPath: String = "", fileName: String = "main.s", biosText: String?, biosPath: String?): Any {
         var success = true
         var errs = ""
-        var bios: Program? = null
+        var bios: LinkedProgram? = null
         // Assemble bios
         if (biosText != null) {
             var biosAssemblerOutput: AssemblerOutput;
@@ -488,7 +489,8 @@ external val document: Document
                 success = false
                 return js("[success, errs, warnings]")
             } else {
-                bios = biosAssemblerOutput.prog
+                val PandL = ProgramAndLibraries(listOf(biosAssemblerOutput.prog), VFS)
+                bios = Linker.link(PandL)
             }
         }
         
