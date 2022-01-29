@@ -65,7 +65,7 @@ external val document: Document
     var cache: CacheHandler = mainCache
     var cacheLevels: ArrayList<CacheHandler> = arrayListOf(mainCache)
     @JsName("simSettings") val simSettings = SimulatorSettings()
-    var sim: Simulator = Simulator(LinkedProgram(), VFS, settings = simSettings, state = SimulatorState32(MemoryMapIO()))
+    var sim: Simulator = Simulator(LinkedProgram(), VFS, settings = simSettings)
     val simState64 = SimulatorState64()
     val temp = QuadWord()
 
@@ -423,7 +423,12 @@ external val document: Document
     }
 
     fun loadSim(linked: LinkedProgram) {
-        sim = Simulator(linked, VFS, simSettings, state = SimulatorState32(MemoryMapIO()))
+        if(simSettings.supportMemoryMappedIO) {
+            sim = Simulator(linked, VFS, simSettings, state = SimulatorState32(MemoryMapIO()))
+        }
+        else {
+            sim = Simulator(linked, VFS, simSettings)
+        }        
         mainCache.reset()
         sim.state.cache = mainCache
         tr = Tracer(sim)
@@ -463,7 +468,12 @@ external val document: Document
             try {
                 val PandL = ProgramAndLibraries(listOf(prog), VFS)
                 val linked = Linker.link(PandL)
-                sim = Simulator(linked, VFS, simSettings, state = SimulatorState32(MemoryMapIO()))
+                if(simSettings.supportMemoryMappedIO) {
+                    sim = Simulator(linked, VFS, simSettings, state = SimulatorState32(MemoryMapIO()))
+                }
+                else {
+                    sim = Simulator(linked, VFS, simSettings)
+                }                  
                 sim.registerPlugin("ExecutionHooks", ExecutionHooks())
                 val args = Lexer.lex(getDefaultArgs())
                 for (arg in args) {
@@ -522,8 +532,13 @@ external val document: Document
     @JsName("reset") fun reset() {
         try {
             val args = sim.args
-            val plugins = sim.plugins
-            sim = Simulator(sim.linkedProgram, VFS, sim.settings, simulatorID = sim.simulatorID , state = SimulatorState32(MemoryMapIO()))
+            val plugins = sim.plugins            
+            if(sim.settings.supportMemoryMappedIO) {
+                sim = Simulator(sim.linkedProgram, VFS, sim.settings, simulatorID = sim.simulatorID , state = SimulatorState32(MemoryMapIO()))
+            }
+            else {
+                sim = Simulator(sim.linkedProgram, VFS, sim.settings, simulatorID = sim.simulatorID)
+            }            
             tr.sim = sim
             for (arg in args) {
                 sim.addArg(arg)
@@ -809,6 +824,10 @@ external val document: Document
 
     @JsName("setAllowAccessBtnStackHeap") fun setAllowAccessBtnStackHeap(b: Boolean) {
         simSettings.allowAccessBtnStackHeap = b
+    }
+
+    @JsName("setSupportMemoryMappedIO") fun setSupportMemoryMappedIO(b: Boolean) {
+        simSettings.supportMemoryMappedIO = b
     }
 
     @JsName("setSetRegsOnInit") fun setSetRegsOnInit(b: Boolean) {
