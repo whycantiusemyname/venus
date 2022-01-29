@@ -65,7 +65,7 @@ external val document: Document
     var cache: CacheHandler = mainCache
     var cacheLevels: ArrayList<CacheHandler> = arrayListOf(mainCache)
     @JsName("simSettings") val simSettings = SimulatorSettings()
-    var sim: Simulator = Simulator(LinkedProgram(), VFS, settings = simSettings)
+    var sim: Simulator = Simulator(LinkedProgram(), VFS, settings = simSettings, state = SimulatorState32(MemoryMapIO()))
     val simState64 = SimulatorState64()
     val temp = QuadWord()
 
@@ -423,7 +423,7 @@ external val document: Document
     }
 
     fun loadSim(linked: LinkedProgram) {
-        sim = Simulator(linked, VFS, simSettings)
+        sim = Simulator(linked, VFS, simSettings, state = SimulatorState32(MemoryMapIO()))
         mainCache.reset()
         sim.state.cache = mainCache
         tr = Tracer(sim)
@@ -443,7 +443,7 @@ external val document: Document
 
     fun exitcodecheck() {
         if (sim.exitcode != null) {
-            val msg = "Exited with error code ${sim.exitcode}"
+            val msg = "\nExited with error code ${sim.exitcode}\n"
             if (sim.exitcode ?: 0 == 0) {
                 Renderer.stdout(msg)
             } else {
@@ -463,7 +463,7 @@ external val document: Document
             try {
                 val PandL = ProgramAndLibraries(listOf(prog), VFS)
                 val linked = Linker.link(PandL)
-                sim = Simulator(linked, VFS, simSettings)
+                sim = Simulator(linked, VFS, simSettings, state = SimulatorState32(MemoryMapIO()))
                 sim.registerPlugin("ExecutionHooks", ExecutionHooks())
                 val args = Lexer.lex(getDefaultArgs())
                 for (arg in args) {
@@ -523,7 +523,7 @@ external val document: Document
         try {
             val args = sim.args
             val plugins = sim.plugins
-            sim = Simulator(sim.linkedProgram, VFS, sim.settings, simulatorID = sim.simulatorID)
+            sim = Simulator(sim.linkedProgram, VFS, sim.settings, simulatorID = sim.simulatorID , state = SimulatorState32(MemoryMapIO()))
             tr.sim = sim
             for (arg in args) {
                 sim.addArg(arg)
