@@ -686,6 +686,13 @@ external val document: Document
         }
     }
 
+    /**
+     * returns Trap-Entry Status and cleares it
+     */
+    @JsName("isTrapEntry") fun isTrapEntry(): Boolean {
+        return sim.isTrapEntry()
+    }
+
      /**
      * Runs the simulator for one step and renders any updates.
      */
