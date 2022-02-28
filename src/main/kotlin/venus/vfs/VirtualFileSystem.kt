@@ -250,28 +250,50 @@ import kotlin.browser.window
     }
 
     fun getObjectFromPath(path: String, make: Boolean = false, location: VFSObject? = null): VFSObject? {
+
         val splitpath = getPath(path)
-        var templocation = if (path.startsWith("/")) {
-            splitpath.removeAt(0)
-            sentinel
-        } else {
-            location ?: currentLocation
+
+        if (path == "" || path == "/") {
+            return sentinel
         }
-        for (obj in splitpath) {
-            if (obj == "") {
-                continue
+
+        if (path.startsWith("/")) {
+            if (splitpath.size > 0) {
+                splitpath.removeAt(0)
+            } else {
+                return sentinel
             }
-            if (!templocation.containsChild(obj)) {
-                if (make) {
-                    templocation.addChild(VFSFile(obj, templocation))
-                } else {
+        }
+
+        var curloc = location ?: sentinel
+        val fname = splitpath.removeAt(splitpath.size - 1)
+
+        for (p in splitpath) {
+            curloc = if (curloc.containsChild(p)) {
+                val next = curloc.getChild(p)!! as VFSObject
+                if (next.type !in listOf(VFSType.Folder, VFSType.Drive)) {
                     return null
                 }
+                next
+            } else {
+                if (p.matches("[a-z]:")) { // Drive Name
+                    val drive = VFSDrive(p, curloc)
+                    curloc.addChild(drive)
+                    drive
+                } else {
+                    val fold = VFSFolder(p, curloc)
+                    curloc.addChild(fold)
+                    fold
+                }
             }
-            templocation = templocation.getChild(obj) as VFSObject
         }
-        return templocation
+        val f = VFSFile(fname, curloc)
+        var fpath = f.getPath()
+        f.setText(fs.readFileSync(fpath, "utf-8"))
+        curloc.addChild(f)
+        return f
     }
+
 
     fun filesFromPrefix(path: String, prefix: String): ArrayList<String> {
         val location: VFSObject = getObjectFromPath(path) ?: this.currentLocation

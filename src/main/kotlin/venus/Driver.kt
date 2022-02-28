@@ -23,6 +23,8 @@ import venusbackend.simulator.cache.CacheError
 import venusbackend.simulator.cache.CacheHandler
 import venusbackend.simulator.cache.PlacementPolicy
 
+import venusbackend.riscv.insts.dsl.parsers.checkCSR
+
 // using these imports only for type checks and fake DOM
 import kotlin.dom.addClass
 import kotlin.dom.removeClass
@@ -231,6 +233,60 @@ external val document: Document
         return sim.getFReg(id)
     }
 
+    // @JsName("getCsrRegister") fun getCsrRegister(id: Int): Number {
+    //     return sim.getCsrReg(id)
+    // }
+
+    @JsName("getCsrRegisterByName") fun getCsrRegisterByName(name: String): Number {
+        val CSR = checkCSR(name)        
+        if (CSR != null) {
+            return sim.getCsrReg(CSR)
+        }
+        return 0 // error!
+    }
+
+    @JsName("getCsrRegisterNames") fun getCsrRegisterNames(): Array<String> {
+        val csrRegList: MutableList<String> = mutableListOf()
+        SpecialRegisters.values().forEach { csrRegList.add(it.regName) }
+        return csrRegList.toTypedArray()
+    }    
+
+    // @JsName("setCsrRegister") fun setCsrRegister(id: Int, value: Number) {
+    //     if (!currentlyRunning()) {
+    //         try {
+    //             sim.setCsrRegNoUndo(id, value)
+    //         } catch (e: NumberFormatException) {
+    //             /* do nothing */
+    //         }
+    //     }
+    // }
+
+    @JsName("setCsrRegisterByName") fun setCsrRegisterByName(name: String, value: Number) {
+        if (!currentlyRunning()) {
+            try {
+                val CSR = checkCSR(name)        
+                if (CSR != null) {
+                    sim.setCsrRegNoUndo(CSR, value)
+                }                                
+            } catch (e: NumberFormatException) {
+                /* do nothing */
+            }
+        }
+    }
+
+    @JsName("getCsrRegisterIdByName") fun getCsrRegisterIdByName(name: String): Number {
+        val CSR = checkCSR(name)        
+        if (CSR != null) {
+            return CSR
+        }
+        else {
+            return -1 // error!
+        }        
+    } 
+    // @JsName("getCsrRegisterNameById") fun getCsrRegisterIdByName(id: Number): String {
+    //     TODO
+    // }            
+
     @JsName("setRegister") fun setRegister(id: Int, value: Number) {
         if (!currentlyRunning()) {
             try {
@@ -250,6 +306,32 @@ external val document: Document
             }
         }
     }
+
+    @JsName("loadByte") fun loadByte(addr: Number): Int {
+        return sim.loadByte(addr)
+    }
+    @JsName("loadHalfWord") fun loadHalfWord(addr: Number): Int {
+        return sim.loadHalfWord(addr)
+    }
+    @JsName("loadWord") fun loadWord(addr: Number): Int {
+        return sim.loadWord(addr)
+    }
+    @JsName("loadLong") fun loadLong(addr: Number): Long {
+        return sim.loadLong(addr)
+    }
+
+    @JsName("storeByte") fun storeByte(addr: Number, value: Number) {
+        sim.storeByte(addr, value)
+    }
+    @JsName("storeHalfWord") fun storeHalfWord(addr: Number, value: Number) {
+        sim.storeHalfWord(addr, value)
+    }
+    @JsName("storeWord") fun storeWord(addr: Number, value: Number) {
+        sim.storeWord(addr, value)
+    }
+    @JsName("storeLong") fun storeLong(addr: Number, value: Number) {
+        sim.storeLong(addr, value)
+    }            
 
     /**
      * DEPRECATED
@@ -604,6 +686,13 @@ external val document: Document
         }
     }
 
+    /**
+     * returns Trap-Entry Status and cleares it
+     */
+    @JsName("isTrapEntry") fun isTrapEntry(): Boolean {
+        return sim.isTrapEntry()
+    }
+
      /**
      * Runs the simulator for one step and renders any updates.
      */
@@ -766,7 +855,7 @@ external val document: Document
         }
     }
 
-    fun getInstructionDump(): String {
+    @JsName("getInstructionDump") fun getInstructionDump(): String {
         val sb = StringBuilder()
         for (i in 0 until sim.linkedProgram.prog.insts.size) {
             val mcode = sim.linkedProgram.prog.insts[i]
@@ -810,11 +899,6 @@ external val document: Document
 
     @JsName("setSetRegsOnInit") fun setSetRegsOnInit(b: Boolean) {
         simSettings.setRegesOnInit = b
-    }
-
-    @JsName("setBreakBeforeInstruction")
-    fun setBreakBeforeInstruction(b: Boolean) {
-        simSettings.breakBeforeInstruction = b
     }
 
     @JsName("verifyText") fun verifyText(input: HTMLInputElement) {
