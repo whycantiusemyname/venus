@@ -281,7 +281,7 @@ external object fs {
                 }
                 next
             } else {
-                if (p.matches("[a-z]:")) { // Drive Name
+                if (p.matches(Regex("[A-Za-z]:"))) { // Windows drive name
                     val drive = VFSDrive(p, curloc)
                     curloc.addChild(drive)
                     drive
