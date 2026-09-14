@@ -4,6 +4,11 @@ import venus.Driver
 import venusbackend.simulator.SimulatorSettings
 import kotlin.browser.window
 
+@JsModule("fs")
+external object fs {
+    fun readFileSync(path: String, encoding: String): String
+}
+
 @JsName("VirtualFileSystem") class VirtualFileSystem(val defaultDriveName: String, val simSettings: SimulatorSettings = SimulatorSettings()) {
     var sentinel = VFSDrive(defaultDriveName, VFSDummy())
     var currentLocation: VFSObject = sentinel
